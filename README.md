@@ -7,7 +7,11 @@ For example, since on GitHub the name and email address of committers and author
 
 ## Input
 
-A `csv` file or database table such as `users` in [GHTorrent](http://ghtorrent.org/relational.html). See the [Alias](https://github.com/bvasiles/ght_unmasking_aliases/blob/e1d22184aeeff7cbc91eadee542d3e63353fb643/alias.py#L7) class for possible fields.
+**Update:** A `csv` file featuring columns `uid`, `name`, `email`, `login`\*, `location`\*, and `user_type`\*.
+
+\* optional
+
+~~A `csv` file or database table such as `users` in [GHTorrent](http://ghtorrent.org/relational.html). See the [Alias](https://github.com/bvasiles/ght_unmasking_aliases/blob/e1d22184aeeff7cbc91eadee542d3e63353fb643/alias.py#L7) class for possible fields.~~
 
 **Important**: each alias must have a unique numeric id. The script will produce a map of alias ids to person ids.
 
