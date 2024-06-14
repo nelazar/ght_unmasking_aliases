@@ -1,5 +1,6 @@
 import os
-from unicodeManager import UnicodeReader, UnicodeWriter
+from csv import DictReader, writer
+import json
 
 import regex
 fakeusr_rex = regex.compile(r'\A[A-Z]{8}$')
@@ -28,11 +29,11 @@ THR_MAX = 20
 
 unmask = {}
 
-dataPath = os.path.abspath('../')
+dataPath = os.path.abspath('../oss-shocks-data')
 
-w_log = UnicodeWriter(open(os.path.join(dataPath, 'idm_log.csv'), 'wb'))
-writer = UnicodeWriter(open(os.path.join(dataPath, 'idm_map.csv'), 'wb'))
-w_maybe = UnicodeWriter(open(os.path.join(dataPath, 'idm_maybe.csv'), 'wb'))
+w_log = writer(open(os.path.join(dataPath, 'idm_log.csv'), 'w'))
+w_map = writer(open(os.path.join(dataPath, 'idm_map.csv'), 'w'))
+w_maybe = writer(open(os.path.join(dataPath, 'idm_maybe.csv'), 'w'))
 
 idx = 0
 step = 100000
@@ -40,7 +41,7 @@ curidx = step
 
 aliases = {}
 
-reader = UnicodeReader(open(os.path.join(dataPath, 'users_emails_sample.csv'), 'rb'))
+reader = DictReader(open(os.path.join(dataPath, 'aliases.csv'), 'r'))
 # _header = reader.next()
 
 # Helper structures
@@ -73,17 +74,17 @@ uid = 0
 raw = {}
 
 for row in reader:
-    line = row.decode('utf-8').strip()
-    uid = uid + 1
-    raw[uid] = line
-    login = None #row[1].strip()
-    user_type = None
-    location = None
+    # line = row[0].decode('utf-8').strip()
+    uid = int(row['uid'])
+    raw[uid] = json.dumps(row)
+    login = row['login'] if 'login' in row.keys() else None
+    user_type = row['user_type'] if 'user_type' in row.keys() else None
+    location = row['location'] if 'location' in row.keys() else None
     try:
-        name = line.split('<')[0].strip()
-        email = line.split('<')[1].strip().split('>')[0].strip()
+        name = row['name']
+        email = row['email']
     except:
-        print line
+        print(row)
         exit()
     
     unmask[raw[uid]] = raw[uid]
@@ -152,41 +153,41 @@ for row in reader:
         
     idx += 1
     if idx >= curidx:
-        print curidx/step
+        print(curidx/step)
         curidx += step
 
-print 'Done: helpers'
+print('Done: helpers')
 
 clues = {}
 
-for email, set_uid in d_email_uid.iteritems():
+for email, set_uid in d_email_uid.items():
     if len(set_uid) > THR_MIN:
         for a,b in combinations(sorted(set_uid, key=lambda uid:int(uid)), 2):
             clues.setdefault((a, b), [])
             clues[(a, b)].append(EMAIL)
-#                print a,b,EMAIL
+#                print(a,b,EMAIL)
             
-print 'Done: email'
+print('Done: email')
             
-for prefix, set_uid in d_comp_prefix_uid.iteritems():
+for prefix, set_uid in d_comp_prefix_uid.items():
     if len(set_uid) > THR_MIN and len(set_uid) < THR_MAX:
         if len(prefix) >= 3:
             for a,b in combinations(sorted(set_uid, key=lambda uid:int(uid)), 2):
                 clues.setdefault((a, b), [])
                 clues[(a, b)].append(COMP_EMAIL_PREFIX)
-#                    print a,b,COMP_EMAIL_PREFIX
+#                    print(a,b,COMP_EMAIL_PREFIX)
 
-print 'Done: comp email prefix'                
+print('Done: comp email prefix')             
 
-for prefix, set_uid in d_prefix_uid.iteritems():
+for prefix, set_uid in d_prefix_uid.items():
     if len(set_uid) > THR_MIN and len(set_uid) < THR_MAX:
         if len(prefix) >= 3:
             for a,b in combinations(sorted(set_uid, key=lambda uid:int(uid)), 2):
                 clues.setdefault((a, b), [])
                 clues[(a, b)].append(SIMPLE_EMAIL_PREFIX)
-#                    print a,b,SIMPLE_EMAIL_PREFIX
+#                    print(a,b,SIMPLE_EMAIL_PREFIX)
                 
-print 'Done: email prefix'
+print('Done: email prefix')
                 
 for prefix in set(d_prefix_uid.keys()).intersection(set(d_login_uid.keys())):
     if len(d_prefix_uid[prefix]) < THR_MAX:
@@ -195,9 +196,9 @@ for prefix in set(d_prefix_uid.keys()).intersection(set(d_login_uid.keys())):
                 clues.setdefault((a, b), [])
                 if not SIMPLE_EMAIL_PREFIX in clues[(a, b)]:
                     clues[(a, b)].append(PREFIX_LOGIN)
-#                    print a,b,PREFIX_LOGIN
+#                    print(a,b,PREFIX_LOGIN)
                 
-print 'Done: prefix=login'
+print('Done: prefix=login')
 
 for prefix in set(d_prefix_uid.keys()).intersection(set(d_name_uid.keys())):
     if len(d_prefix_uid[prefix]) < THR_MAX and len(d_name_uid[prefix]) < THR_MAX:
@@ -207,7 +208,7 @@ for prefix in set(d_prefix_uid.keys()).intersection(set(d_name_uid.keys())):
                 if not SIMPLE_EMAIL_PREFIX in clues[(a, b)]:
                     clues[(a, b)].append(PREFIX_NAME)
 
-print 'Done: prefix=name'
+print('Done: prefix=name')
 
 for prefix in set(d_login_uid.keys()).intersection(set(d_name_uid.keys())):
     if len(d_name_uid[prefix]) < THR_MAX:
@@ -217,9 +218,9 @@ for prefix in set(d_login_uid.keys()).intersection(set(d_name_uid.keys())):
                 if not SIMPLE_EMAIL_PREFIX in clues[(a, b)]:
                     clues[(a, b)].append(LOGIN_NAME)
 
-print 'Done: login=name'
+print('Done: login=name')
                 
-for name, set_uid in d_name_uid.iteritems():
+for name, set_uid in d_name_uid.items():
     if len(set_uid) > THR_MIN and len(set_uid) < THR_MAX:
         if len(name.split(' ')) > 1:
             for a,b in combinations(sorted(set_uid, key=lambda uid:int(uid)), 2):
@@ -230,17 +231,17 @@ for name, set_uid in d_name_uid.iteritems():
                 clues.setdefault((a, b), [])
                 clues[(a, b)].append(SIMPLE_NAME)
                     
-print 'Done: full/simple name'
+print('Done: full/simple name')
 
-for domain, set_uid in d_domain_uid.iteritems():
+for domain, set_uid in d_domain_uid.items():
     if len(set_uid) > THR_MIN and len(set_uid) < THR_MAX:
         for a,b in combinations(sorted(set_uid, key=lambda uid:int(uid)), 2):
             clues.setdefault((a, b), [])
             clues[(a, b)].append(DOMAIN)
                 
-print 'Done: email domain'
+print('Done: email domain')
 
-for location, set_uid in d_location_uid.iteritems():
+for location, set_uid in d_location_uid.items():
     if len(set_uid) > THR_MIN:
         for a,b in combinations(sorted(set_uid, key=lambda uid:int(uid)), 2):
             na = d_uid_name[a]
@@ -250,7 +251,7 @@ for location, set_uid in d_location_uid.iteritems():
                     clues.setdefault((a, b), [])
                     clues[(a, b)].append(LOCATION)
                 
-print 'Done: location'
+print('Done: location')
 
 
 d_alias_map = {}
@@ -260,8 +261,8 @@ labels = {}
 def merge(a,b,rule):
     # Contract: a < b 
     assert a<b, "A must be less than B"
-    if d_alias_map.has_key(a):
-        if d_alias_map.has_key(b):
+    if a in d_alias_map.keys():
+        if b in d_alias_map.keys():
             if d_alias_map[a] == d_alias_map[b]:
                 labels[d_alias_map[a]].append(rule)
             else:
@@ -282,7 +283,7 @@ def merge(a,b,rule):
             clusters[d_alias_map[a]].add(b)
             labels[d_alias_map[a]].append(rule)
     else:
-        if d_alias_map.has_key(b):
+        if b in d_alias_map.keys():
             #b_src = d_alias_map[b] # b_src < a by construction
             d_alias_map[a] = d_alias_map[b]
             clusters[d_alias_map[b]].add(a)
@@ -313,9 +314,9 @@ for (a,b), list_clues in sorted(clues.items(), key=lambda e:(int(e[0][0]),int(e[
         merge(a,b,SIMPLE_NAME)
         
 
-print 'Done: clusters'
+print('Done: clusters')
             
-for uid, member_uids in clusters.iteritems():
+for uid, member_uids in clusters.items():
     members = [aliases[m] for m in member_uids]
     
     # Count fake/real
@@ -353,6 +354,9 @@ for uid, member_uids in clusters.iteritems():
     # All with same full name
     elif cl.get(FULL_NAME,0) >= (len(members)-1):
         is_valid = True
+    # All with same login
+    elif cl.get(LOGIN_NAME,0) >= (len(members)-1):
+        is_valid = True
     # The only two rules that fired are full name and email, in some combination
     elif len(cl.keys()) == 2 and cl.get(FULL_NAME,0) > 0 and cl.get(EMAIL,0) > 0:
         is_valid = True
@@ -384,7 +388,7 @@ for uid, member_uids in clusters.iteritems():
                 for a in extra_members:
                     if a.uid != rep.uid:
                         w_log.writerow([a.uid, a.login, a.name, a.email, a.location])
-                        writer.writerow([a.uid, rep.uid])
+                        w_map.writerow([a.uid, rep.uid])
                         unmask[raw[a.uid]] = raw[rep.uid]
         
         
@@ -412,7 +416,7 @@ for uid, member_uids in clusters.iteritems():
         for a in members:
             if a.uid != rep.uid:
                 w_log.writerow([a.uid, a.login, a.name, a.email, a.location])
-                writer.writerow([a.uid, rep.uid])
+                w_map.writerow([a.uid, rep.uid])
                 unmask[raw[a.uid]] = raw[rep.uid]
 
 
