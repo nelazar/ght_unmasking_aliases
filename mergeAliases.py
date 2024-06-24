@@ -29,7 +29,7 @@ THR_MAX = 20
 
 unmask = {}
 
-dataPath = os.path.abspath('../oss-shocks-data')
+dataPath = os.path.abspath('../data')
 
 w_log = writer(open(os.path.join(dataPath, 'idm_log.csv'), 'w'))
 w_map = writer(open(os.path.join(dataPath, 'idm_map.csv'), 'w'))
